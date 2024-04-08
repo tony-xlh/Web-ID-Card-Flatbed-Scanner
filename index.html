@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Scan and Crop Documents</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0" />
+  <script src="https://cdn.jsdelivr.net/npm/dynamsoft-document-normalizer@2.0.20/dist/ddn.js"></script>
+  <script src="https://unpkg.com/dwt@18.4.2/dist/dynamsoft.webtwain.min.js"></script>
+  <style>
+    .scanner {
+      display: flex;
+    }
+
+    .options {
+      flex-basis: 30%;
+      background: #F0EDE9;
+      overflow: auto;
+    }
+
+    .viewer {
+      flex-basis: 70%;
+      overflow: hidden;
+    }
+    
+    .navbar {
+      display: flex;
+      align-items: center;
+      height: 50px;
+      background: black;
+      width: 100%;
+    }
+
+    body {
+      margin: 0;
+    }
+
+    .fullwidth {
+      width: 100%;
+    }
+
+    .title {
+      margin-left: 8px;
+      text-decoration: none;
+      color: white;
+      font-family: sans-serif;
+      font-size: larger;
+      text-transform: uppercase;
+    }
+
+    .scanner {
+      height: calc(100vh - 50px);
+    }
+
+    .section {
+      padding: 8px;
+    }
+
+    .viewer .section {
+      height: calc(100% - 16px);
+    }
+
+    .options select {
+      width: 100%;
+      height: 30px;
+    }
+
+    .options div {
+      margin-bottom: 10px;
+    }
+
+    .d-primary-btn {
+      display: inline-block;
+      background-color: #fe8e14;
+      color: #fff;
+      text-align: center;
+      cursor: pointer;
+      transition: ease-in .2s all;
+      font-family: "sans-serif"
+    }
+
+    .d-primary-btn:hover {
+      box-shadow:-4px 4px #000;
+      transform: translate(4px,-4px)
+    }
+
+    .d-secondary-btn {
+      display: inline-block;
+      background-color: transparent;
+      color: #fe8e14;
+      text-align: center;
+      cursor: pointer;
+      font-family: "sans-serif"
+    }
+
+    .d-secondary-btn:hover {
+      color: #fea543;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: flex-start;
+      align-items: center;
+      overflow: auto;
+      height: 40px;
+      white-space: nowrap;
+    }
+
+    .actions .d-primary-btn {
+      padding: 5px 10px;
+      margin-right: 5px;
+    }
+
+    #dwtcontrolContainer {
+      height: calc(100% - 40px);
+    }
+
+    #cropper {
+      display: none;
+      height: calc(100% - 40px);
+    }
+
+    .ml-10 {
+      margin-left: 10px;
+    }
+
+    .input-modal {
+      display: flex;
+      align-items: center;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 250px;
+      height: 150px;
+      border: 1px solid gray;
+      border-radius: 5px;
+      background: white;
+      z-index: 9999;
+      visibility: hidden;
+    }
+
+    .input-modal.active {
+      visibility: inherit;
+    }
+
+    @media screen and (max-device-width: 600px){
+      .scanner {
+        flex-wrap: wrap;
+      }
+      .options {
+        flex-basis: 100%;
+      }
+      .viewer {
+        flex-basis: 100%;
+      }
+
+      .scanner {
+        height: auto;
+      }
+
+      #dwtcontrolContainer {
+        height: 400px;
+      }
+
+      #cropper {
+        height: 400px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <a class="title" href="#">Scan and Crop</a>
+  </nav>
+  <div class="container">
+    <div class="scanner">
+      <div class="options">
+        <div class="section">
+          <div>
+            <label>
+              Scanner:
+              <select id="select-scanner"></select>
+            </label>
+          </div>
+          <div>
+            <label>
+              Resolution:
+              <select id="select-resolution">
+                <option value="100">100</option>
+                <option value="200">200</option>
+                <option value="300" selected>300</option>
+              </select>
+            </label>
+          </div>
+          <div>
+            <label>
+              Pixel Type:
+              <select id="select-pixeltype">
+                <option>Black & White</option>
+                <option>Gray</option>
+                <option selected>Color</option>
+              </select>
+            </label>
+          </div>
+          <div>
+            <input type="checkbox" id="showUI"/>
+            <label for="showUI">
+              Show Scanner UI
+            </label>
+          </div>
+          <div>
+            <input type="checkbox" id="useADF"/>
+            <label for="useADF">
+              Auto Document Feeder
+            </label>
+          </div>
+          <div>
+            <input type="checkbox" id="useDuplex"/>
+            <label for="useDuplex">
+              2-side Scan
+            </label>
+          </div>
+          <div>
+            <a onclick="scan();" class="d-primary-btn fullwidth" style="padding-top:5px;padding-bottom:5px;">Scan</a>
+            <a onclick="loadImages();" class="d-secondary-btn fullwidth" style="margin-top:5px;">Import Local Image</a>
+          </div>
+          <div style="margin-top:2em;">
+            Based on <a target="_blank" href="https://www.dynamsoft.com/web-twain/overview">Dynamic Web TWAIN</a>.
+          </div>
+        </div>
+      </div>
+      <div class="viewer">
+        <div class="section" >
+          <div id="dwtcontrolContainer"></div>
+          <div class="actions">
+            <a class="d-primary-btn" onclick="showEditor();">Edit</a>
+            <a class="d-primary-btn" onclick="save();">Save</a>
+            <label>
+              Output Format:
+              <select id="select-format">
+                <option>PDF</option>
+                <option>JPG</option>
+                <option>PNG</option>
+              </select>
+            </label>
+            <span id="status" class="ml-10"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="input-modal">
+    <div style="padding:10px;">
+      <div>
+        Please input your Dynamic Web TWAIN's license (<a href="https://www.dynamsoft.com/customer/license/trialLicense" target="_blank">apply</a> or use the one-day trial):
+      </div>
+      <input type="text" id="dwtLicense"/>
+      <button id="saveLicenseBtn">Save</button>
+    </div>
+  </div>
+  <script type="text/javascript">
+    let DWObject;
+    let oneDayTrial = "DLS2eyJoYW5kc2hha2VDb2RlIjoiMjAwMDAxLTE2NDk4Mjk3OTI2MzUiLCJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSIsInNlc3Npb25QYXNzd29yZCI6IndTcGR6Vm05WDJrcEQ5YUoifQ=="; //one-day trial
+    let dwtLicense;
+    let scanners = [];
+    Dynamsoft.DWT.AutoLoad = false;
+    Dynamsoft.DWT.Containers = [];
+    Dynamsoft.DWT.ResourcesPath = "https://unpkg.com/dwt@18.4.2/dist";
+    window.onload = function(){
+      document.getElementById("saveLicenseBtn").addEventListener("click",function(){
+        dwtLicense = document.getElementById("dwtLicense").value;
+        localStorage.setItem("dwtLicense",dwtLicense);
+        hideInputModal();
+        init();
+      })
+      showLicenseModal();
+    }
+
+    function showLicenseModal(){
+      let storedDWTLicense = localStorage.getItem("dwtLicense");
+      if (storedDWTLicense) {
+        dwtLicense = storedDWTLicense;
+      }
+      document.getElementById("dwtLicense").value = dwtLicense ?? oneDayTrial;
+      document.getElementsByClassName("input-modal")[0].classList.add("active");
+    }
+
+    function hideInputModal(){
+      document.getElementsByClassName("input-modal")[0].classList.remove("active");
+    }
+
+    function init(){
+      Dynamsoft.DWT.ProductKey = dwtLicense ?? oneDayTrial;
+      Dynamsoft.DWT.CreateDWTObjectEx(
+        {
+          WebTwainId: 'dwtcontrol'
+        },
+        function(obj) {
+          DWObject = obj;
+          DWObject.Viewer.bind(document.getElementById('dwtcontrolContainer'));
+          DWObject.Viewer.height = "100%";
+          DWObject.Viewer.width = "100%";
+          DWObject.Viewer.show();
+          DWObject.Viewer.setViewMode(2,2);
+          loadScanners();
+        },
+        function(err) {
+          console.log(err);
+        }
+      );
+    }
+
+    async function loadScanners(){
+      scanners = await DWObject.GetDevicesAsync();
+      console.log(scanners);
+      let selScanners = document.getElementById("select-scanner");
+      selScanners.innerHTML = "";
+      for (let index = 0; index < scanners.length; index++) {
+        const scanner = scanners[index];
+        let option = new Option(scanner.displayName,index);
+        selScanners.appendChild(option);
+      }
+    }
+
+    async function scan(){
+      const selectedIndex = document.getElementById("select-scanner").selectedIndex;
+      const options = {
+        IfShowUI:document.getElementById("showUI").checked,
+        PixelType:document.getElementById("select-pixeltype").selectedIndex,
+        Resolution:document.getElementById("select-resolution").selectedOptions[0].value,
+        IfFeederEnabled:document.getElementById("useADF").checked,
+        IfDuplexEnabled:document.getElementById("useDuplex").checked
+      };
+      console.log(options)
+      console.log(scanners[selectedIndex]);
+      await DWObject.SelectDeviceAsync(scanners[selectedIndex]);
+      await DWObject.OpenSourceAsync();
+      await DWObject.AcquireImageAsync(options);
+      await DWObject.CloseSourceAsync();
+    }
+
+    function loadImages(){
+      DWObject.IfShowFileDialog = true; //"Open File" dialog will be opened.
+      DWObject.LoadImageEx(
+        "", //file name can be empty if "Open File" dialog is called.
+        Dynamsoft.DWT.EnumDWT_ImageType.IT_ALL,
+        function () {
+          console.log("success");
+        },
+        function (errorCode, errorString) {
+          alert(errorString);
+        }
+      );
+    }
+
+    function loadImageFromDataURL(dataURL){
+      return new Promise((resolve, reject) => {
+        DWObject.LoadImageFromBase64Binary(
+          removeDataURLHead(dataURL),
+          Dynamsoft.DWT.EnumDWT_ImageType.IT_PNG,
+          function(){
+            resolve();
+          },
+          function(errorCode,errorString){
+            reject(errorString);
+          }
+        )
+      })
+    }
+
+    function removeDataURLHead(dataURL){
+      return dataURL.substring(dataURL.indexOf(",")+1,dataURL.length);
+    }
+
+    function showEditor(){
+      let imageEditor = DWObject.Viewer.createImageEditor();
+      imageEditor.show();
+    }
+
+    async function convertToBlob(index){
+      return new Promise((resolve, reject) => {
+        DWObject.ConvertToBlob(
+          [index],
+          Dynamsoft.DWT.EnumDWT_ImageType.IT_PNG,
+          function (result, indices, type) {
+            resolve(result);
+          },
+          function (errorCode, errorString) {
+            reject(errorString);
+          }
+        );  
+      })
+    }
+
+    async function convertToBase64EncodedPNG(){
+      return new Promise((resolve, reject) => {
+        DWObject.ConvertToBase64(
+          [DWObject.CurrentImageIndexInBuffer],
+          Dynamsoft.DWT.EnumDWT_ImageType.IT_PNG,
+          function (result, indices, type) {
+            resolve(result.getData(0, result.getLength()));
+          },
+          function (errorCode, errorString) {
+            reject(errorString);
+          }
+        );  
+      })
+    }
+
+    function save(){
+      let selectedIndex = document.getElementById("select-format").selectedIndex;
+      const onSuccess = () => {
+        alert("Saved");
+      };
+      const onError = (errorCode,errorString) => {
+        alert(errorString);
+      };
+      if (selectedIndex === 0) {
+        DWObject.SaveAllAsPDF("Scanned.pdf",onSuccess,onError);
+      }else if (selectedIndex === 1) {
+        DWObject.SaveAsJPEG("Scanned.jpg", DWObject.CurrentImageIndexInBuffer,onSuccess,onError);
+      }else if (selectedIndex === 2) {
+        DWObject.SaveAsPNG("Scanned.png", DWObject.CurrentImageIndexInBuffer,onSuccess,onError);
+      }
+    }
+
+    function updateStatus(status){
+      document.getElementById("status").innerText = status;
+    }
+  </script>
+</body>
+</html>
