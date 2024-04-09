@@ -160,8 +160,17 @@
       visibility: inherit;
     }
 
+    .result-modal li {
+      margin-bottom: 10px;
+    }
+
     .input-modal input {
       width: calc(100% - 10px);
+    }
+
+    table, th, td {
+      border: 1px solid black;
+      border-collapse: collapse;
     }
 
     @media screen and (max-device-width: 600px){
@@ -458,34 +467,61 @@
     function showResultModal(){
       document.getElementsByClassName("result-modal")[0].classList.add("active");
       let ol = document.createElement("ol");
+      
       for (let index = 0; index < readingResults.length; index++) {
         const result = readingResults[index];
-        console.log(result);
-        let content = "";
+        let fieldKeyAndValues = [];
+        let table = templateTable();
+        let body = table.getElementsByTagName("tbody")[0];
         if (result.codeType == "AAMVA_DL_ID") {
-          let li = document.createElement("li");
+          fieldKeyAndValues.push({"field":"type","value":"Driver's License"});
           for (let index = 0; index < DLFields.length; index++) {
             const field = DLFields[index];
             const value = result.getFieldValue(field);
-            content = content + field+": "+value+"\n";
+            fieldKeyAndValues.push({"field":field,"value":value});
           }
         }else if (result.codeType == "MRTD_TD1_ID") {
-          let li = document.createElement("li");
+          fieldKeyAndValues.push({"field":"type","value":"ID Card"});
           for (let index = 0; index < MRZFields.length; index++) {
             const field = MRZFields[index];
             const value = result.getFieldValue(field);
-            content = content + field+": "+value+"\n";
+            fieldKeyAndValues.push({"field":field,"value":value});
           }
         }
-        if (content) {
-          let li = document.createElement("li");
-          li.innerText = content;
-          ol.appendChild(li);
+        for (let index = 0; index < fieldKeyAndValues.length; index++) {
+          let row = document.createElement("tr");
+          const item = fieldKeyAndValues[index];
+          let fieldCell = document.createElement("td");
+          let valueCell = document.createElement("td");
+          fieldCell.innerText = item.field;
+          valueCell.innerText = item.value;
+          row.appendChild(fieldCell);
+          row.appendChild(valueCell);
+          body.appendChild(row);
         }
+        let li = document.createElement("li");
+        li.append(table);
+        ol.appendChild(li);
       }
       document.getElementById("results").outerHTML = ol.outerHTML;
     }
 
+    function templateTable(){
+      let table = document.createElement("table");
+      let head = document.createElement("thead");
+      let headRow = document.createElement("tr");
+      let th1 = document.createElement("th");
+      th1.innerText = "Field";
+      let th2 = document.createElement("th");
+      th2.innerText = "Value";
+      headRow.appendChild(th1);
+      headRow.appendChild(th2);
+      head.appendChild(headRow);
+      let body = document.createElement("tbody");
+      table.appendChild(head);
+      table.appendChild(body);
+      return table;
+    }
     function hideResultModal(){
       document.getElementsByClassName("result-modal")[0].classList.remove("active");
     }
