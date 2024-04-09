@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dynamsoft Document Normalizer Parameter Adjustment</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0" />
+  <script src="https://cdn.jsdelivr.net/npm/dynamsoft-core@3.0.30/dist/core.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dynamsoft-license@3.0.20/dist/license.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dynamsoft-document-normalizer@2.0.20/dist/ddn.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dynamsoft-capture-vision-router@2.0.30/dist/cvr.js"></script>
+  <style>
+    img {
+      max-width:300px;
+    }
+
+    .imgs {
+      display: flex;
+      align-items: flex-start;
+    }
+  </style>
+</head>
+<body>
+  <div>
+    <input type="file" id="file" onchange="loadImageFromFile();" accept=".jpg,.jpeg,.png,.bmp" />
+    <button onclick="detect();" id="detectButton">Detect</button>
+    <div class="imgs">
+      <img id="original"/>
+      <img id="normalized"/>
+    </div>
+    <div>
+      <textarea></textarea>
+    </div>
+  </div>
+  <script type="text/javascript">
+    let router;
+    init();
+    async function init(){
+      let license = "DLS2eyJvcmdhbml6YXRpb25JRCI6IjIwMDAwMSJ9";
+      console.log(license)
+      Dynamsoft.License.LicenseManager.initLicense(license);
+      Dynamsoft.Core.CoreModule.loadWasm(["DDN"]);
+      router = await Dynamsoft.CVR.CaptureVisionRouter.createInstance();
+    }
+
+    function loadImageFromFile(){
+      let fileInput = document.getElementById("file");
+      let files = fileInput.files;
+      if (files.length == 0) {
+        return;
+      }
+      let file = files[0];
+      fileReader = new FileReader();
+      fileReader.onload = function(e){
+        document.getElementById("original").src = e.target.result;
+      };
+      fileReader.onerror = function () {
+        console.warn('oops, something went wrong.');
+      };
+      fileReader.readAsDataURL(file);
+    }
+
+    async function detect(){
+      let textarea = document.querySelector("textarea");
+      let template = textarea.value;
+      console.log(template);
+      if (template) {
+        await router.initSettings(template)
+      }
+      let img = document.getElementById("original");
+      let normalizeResult = await router.capture(img, "DetectAndNormalizeDocument_Default");
+      console.log(normalizeResult);
+      if (normalizeResult.items[0]) {
+        const dataURL = normalizeResult.items[0].toCanvas().toDataURL();
+        document.getElementById("normalized").src = dataURL;
+      }
+      
+    }
+  </script>
+</body>
+</html>
