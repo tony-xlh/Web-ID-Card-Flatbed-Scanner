@@ -8,6 +8,7 @@
   <script src="https://cdn.jsdelivr.net/npm/dynamsoft-barcode-reader@10.0.21/dist/dbr.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dynamsoft-label-recognizer@3.0.30/dist/dlr.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dynamsoft-document-normalizer@2.0.20/dist/ddn.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dynamsoft-code-parser@2.0.20/dist/dcp.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dynamsoft-capture-vision-router@2.0.32/dist/cvr.js"></script>
   <script src="https://unpkg.com/dwt@18.4.2/dist/dynamsoft.webtwain.min.js"></script>
   <style>
@@ -287,7 +288,9 @@
     let dwtLicense;
     let dcvLicense;
     let router;
+    let parser;
     let scanners = [];
+    let readingResults = [];
     Dynamsoft.DWT.AutoLoad = false;
     Dynamsoft.DWT.Containers = [];
     Dynamsoft.DWT.ResourcesPath = "https://unpkg.com/dwt@18.4.2/dist";
@@ -343,6 +346,7 @@
       Dynamsoft.License.LicenseManager.initLicense(dcvLicense ?? oneDayTrial);
       Dynamsoft.Core.CoreModule.loadWasm(["DDN","DBR","DLR"]);
       router = await Dynamsoft.CVR.CaptureVisionRouter.createInstance();
+      parser = await Dynamsoft.DCP.CodeParser.createInstance();
     }
 
     async function loadScanners(){
@@ -368,7 +372,7 @@
           await loadImageFromDataURL(dataURL);
           DWObject.RemoveImage(index);
           DWObject.MoveImage(length-1,index);
-        } 
+        }
       }
     }
 
@@ -382,6 +386,38 @@
         let barcodeReadingResult = await router.capture(blob, "ReadBarcodes_Balance");
         console.log(barcodeReadingResult);
         console.log(OCRResult);
+        await parseOCRResult(OCRResult)
+        await parseBarcodeResult(barcodeReadingResult)
+      }
+    }
+
+    async function parseOCRResult(result){
+      let str = "";
+      for (let index = 0; index < result.items.length; index++) {
+        const item = result.items[index];
+        if (item.type == Dynamsoft.Core.EnumCapturedResultItemType.CRIT_TEXT_LINE) {
+          str = str + item.text;
+        }
+      }
+      if (str) {
+        await Dynamsoft.DCP.CodeParserModule.loadSpec("MRTD_TD1_ID");
+        let parsedResultItem = await parser.parse(str);
+        console.log(parsedResultItem);
+      }
+    }
+
+    async function parseBarcodeResult(result){
+      await Dynamsoft.DCP.CodeParserModule.loadSpec("AAMVA_DL_ID");
+      for (let index = 0; index < result.items.length; index++) {
+        const item = result.items[index];
+        if (item.type == Dynamsoft.Core.EnumCapturedResultItemType.CRIT_BARCODE) {
+          try {
+            let parsedResultItem = await parser.parse(item.bytes);
+            console.log(parsedResultItem);  
+          } catch (error) {
+            console.log(error);
+          }
+        }
       }
     }
 
