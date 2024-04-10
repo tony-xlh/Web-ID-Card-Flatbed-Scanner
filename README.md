@@ -16,6 +16,8 @@ It uses the following SDKs by Dynamsoft:
 * Dynamsoft Label Recognizer: recognize MRZ on ID cards.
 * Dynamsoft Code Parser: parse MRZ and barcodes to get meaningful data
 
+Note: The latter four products (aggregation name: Dynamsoft Capture Vision) can use the same trial license while Dynamic Web TWAIN uses a separate license.
+
 [Online demo](https://tony-xlh.github.io/Web-ID-Card-Flatbed-Scanner/)
 
 [Sample-images.pdf](https://github.com/xulihang/Web-ID-Card-Flatbed-Scanner/files/14926050/ID-Card-Scanned-Done.pdf)
