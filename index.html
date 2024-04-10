@@ -323,7 +323,7 @@
     let scanners = [];
     let readingResults = [];
     let imageIndices = [];
-    let MRZFields = ["documentNumber","issuingState","name","sex","nationality","dateOfExpiry","dateOfBirth"];
+    let MRZFields = ["documentNumber","passportNumber","issuingState","name","sex","nationality","dateOfExpiry","dateOfBirth"];
     let DLFields = ["licenseNumber","lastName","firstName","city","expirationDate","birthDate","sex","issuedDate"];
     Dynamsoft.DWT.AutoLoad = false;
     Dynamsoft.DWT.Containers = [];
@@ -383,6 +383,13 @@
       Dynamsoft.License.LicenseManager.initLicense(dcvLicense ?? oneDayTrial);
       Dynamsoft.Core.CoreModule.loadWasm(["DDN","DBR","DLR"]);
       router = await Dynamsoft.CVR.CaptureVisionRouter.createInstance();
+      await Dynamsoft.DCP.CodeParserModule.loadSpec("MRTD_TD1_ID");
+      await Dynamsoft.DCP.CodeParserModule.loadSpec("MRTD_TD2_FRENCH_ID")
+      await Dynamsoft.DCP.CodeParserModule.loadSpec("MRTD_TD2_ID")
+      await Dynamsoft.DCP.CodeParserModule.loadSpec("MRTD_TD2_VISA")
+      await Dynamsoft.DCP.CodeParserModule.loadSpec("MRTD_TD3_PASSPORT")  
+      await Dynamsoft.DCP.CodeParserModule.loadSpec("MRTD_TD3_VISA")
+      await Dynamsoft.DCP.CodeParserModule.loadSpec("AAMVA_DL_ID");
       parser = await Dynamsoft.DCP.CodeParser.createInstance();
     }
 
@@ -438,17 +445,18 @@
 
     async function parseOCRResult(result,imageIndex){
       let str = "";
-      if (result.items.length != 3) {
+      if (result.items.length < 2) {
         return;
       }
       for (let index = 0; index < result.items.length; index++) {
         const item = result.items[index];
         if (item.type == Dynamsoft.Core.EnumCapturedResultItemType.CRIT_TEXT_LINE) {
-          str = str + item.text;
+          if (item.text.length == 30 || item.text.length == 44) {
+            str = str + item.text;
+          }
         }
       }
       if (str) {
-        await Dynamsoft.DCP.CodeParserModule.loadSpec("MRTD_TD1_ID");
         let parsedResultItem = await parser.parse(str);
         console.log(parsedResultItem);
         readingResults.push(parsedResultItem);
@@ -457,10 +465,12 @@
     }
 
     async function parseBarcodeResult(result,imageIndex){
-      await Dynamsoft.DCP.CodeParserModule.loadSpec("AAMVA_DL_ID");
       for (let index = 0; index < result.items.length; index++) {
         const item = result.items[index];
         if (item.type == Dynamsoft.Core.EnumCapturedResultItemType.CRIT_BARCODE) {
+          if (item.formatString.indexOf("PDF417") == -1) {
+            continue;
+          }
           try {
             let parsedResultItem = await parser.parse(item.bytes);
             readingResults.push(parsedResultItem);
@@ -476,7 +486,7 @@
     function showResultModal(){
       document.getElementsByClassName("result-modal")[0].classList.add("active");
       let ol = document.createElement("ol");
-      
+      ol.id = "results";
       for (let index = 0; index < readingResults.length; index++) {
         const result = readingResults[index];
         let fieldKeyAndValues = [];
@@ -489,12 +499,14 @@
             const value = result.getFieldValue(field);
             fieldKeyAndValues.push({"field":field,"value":value});
           }
-        }else if (result.codeType == "MRTD_TD1_ID") {
+        }else if (result.codeType.indexOf("MRTD") != -1) {
           fieldKeyAndValues.push({"field":"type","value":"ID Card"});
           for (let j = 0; j < MRZFields.length; j++) {
             const field = MRZFields[j];
             const value = result.getFieldValue(field);
-            fieldKeyAndValues.push({"field":field,"value":value});
+            if (value) {
+              fieldKeyAndValues.push({"field":field,"value":value});
+            }
           }
         }
         for (let j = 0; j < fieldKeyAndValues.length; j++) {
