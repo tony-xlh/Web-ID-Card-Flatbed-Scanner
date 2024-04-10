@@ -19,3 +19,6 @@ Note: The latter four products (aggregation name: Dynamsoft Capture Vision) can 
 
 [Sample-images.pdf](https://github.com/xulihang/Web-ID-Card-Flatbed-Scanner/files/14926050/ID-Card-Scanned-Done.pdf)
 
+## Blog
+
+[How to Build a Web App to Scan an ID Card using a Flatbed Scanner](https://www.dynamsoft.com/codepool/id-card-flatbed-scanner-web-app.html)
