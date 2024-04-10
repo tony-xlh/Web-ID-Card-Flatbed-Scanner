@@ -164,6 +164,10 @@
       margin-bottom: 10px;
     }
 
+    .result-modal img {
+      max-width:100px;
+    }
+
     .input-modal input {
       width: calc(100% - 10px);
     }
@@ -318,6 +322,7 @@
     let parser;
     let scanners = [];
     let readingResults = [];
+    let imageIndices = [];
     let MRZFields = ["documentNumber","issuingState","name","sex","nationality","dateOfExpiry","dateOfBirth"];
     let DLFields = ["licenseNumber","lastName","firstName","city","expirationDate","birthDate","sex","issuedDate"];
     Dynamsoft.DWT.AutoLoad = false;
@@ -410,6 +415,7 @@
 
     async function readAll(){
       readingResults = [];
+      imageIndices = [];
       let length = DWObject.HowManyImagesInBuffer;
       for (let index = 0; index < length; index++) {
         DWObject.SelectImages([index]);
@@ -420,8 +426,8 @@
         let barcodeReadingResult = await router.capture(blob, "ReadBarcodes_Balance");
         console.log(barcodeReadingResult);
         console.log(OCRResult);
-        await parseOCRResult(OCRResult)
-        await parseBarcodeResult(barcodeReadingResult)
+        await parseOCRResult(OCRResult,index)
+        await parseBarcodeResult(barcodeReadingResult,index)
       }
       if (readingResults.length>0) {
         showResultModal();
@@ -430,7 +436,7 @@
       }
     }
 
-    async function parseOCRResult(result){
+    async function parseOCRResult(result,imageIndex){
       let str = "";
       if (result.items.length != 3) {
         return;
@@ -446,10 +452,11 @@
         let parsedResultItem = await parser.parse(str);
         console.log(parsedResultItem);
         readingResults.push(parsedResultItem);
+        imageIndices.push(imageIndex);
       }
     }
 
-    async function parseBarcodeResult(result){
+    async function parseBarcodeResult(result,imageIndex){
       await Dynamsoft.DCP.CodeParserModule.loadSpec("AAMVA_DL_ID");
       for (let index = 0; index < result.items.length; index++) {
         const item = result.items[index];
@@ -457,6 +464,7 @@
           try {
             let parsedResultItem = await parser.parse(item.bytes);
             readingResults.push(parsedResultItem);
+            imageIndices.push(imageIndex);
             console.log(parsedResultItem);  
           } catch (error) {
             console.log(error);
@@ -476,22 +484,22 @@
         let body = table.getElementsByTagName("tbody")[0];
         if (result.codeType == "AAMVA_DL_ID") {
           fieldKeyAndValues.push({"field":"type","value":"Driver's License"});
-          for (let index = 0; index < DLFields.length; index++) {
-            const field = DLFields[index];
+          for (let j = 0; j < DLFields.length; j++) {
+            const field = DLFields[j];
             const value = result.getFieldValue(field);
             fieldKeyAndValues.push({"field":field,"value":value});
           }
         }else if (result.codeType == "MRTD_TD1_ID") {
           fieldKeyAndValues.push({"field":"type","value":"ID Card"});
-          for (let index = 0; index < MRZFields.length; index++) {
-            const field = MRZFields[index];
+          for (let j = 0; j < MRZFields.length; j++) {
+            const field = MRZFields[j];
             const value = result.getFieldValue(field);
             fieldKeyAndValues.push({"field":field,"value":value});
           }
         }
-        for (let index = 0; index < fieldKeyAndValues.length; index++) {
+        for (let j = 0; j < fieldKeyAndValues.length; j++) {
           let row = document.createElement("tr");
-          const item = fieldKeyAndValues[index];
+          const item = fieldKeyAndValues[j];
           let fieldCell = document.createElement("td");
           let valueCell = document.createElement("td");
           fieldCell.innerText = item.field;
@@ -500,6 +508,18 @@
           row.appendChild(valueCell);
           body.appendChild(row);
         }
+        //append image
+        let row = document.createElement("tr");
+        let fieldCell = document.createElement("td");
+        let valueCell = document.createElement("td");
+        let img = document.createElement("img");
+        img.src = DWObject.GetImageURL(imageIndices[index]);
+        fieldCell.innerText = "image";
+        valueCell.appendChild(img);
+        row.appendChild(fieldCell);
+        row.appendChild(valueCell);
+        body.appendChild(row);
+
         let li = document.createElement("li");
         li.append(table);
         ol.appendChild(li);
