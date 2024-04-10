@@ -438,7 +438,7 @@
 
     async function parseOCRResult(result,imageIndex){
       let str = "";
-      if (result.items.length != 3) {
+      if (result.items.length < 2) {
         return;
       }
       for (let index = 0; index < result.items.length; index++) {
