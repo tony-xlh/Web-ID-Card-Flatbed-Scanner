@@ -468,6 +468,9 @@
       for (let index = 0; index < result.items.length; index++) {
         const item = result.items[index];
         if (item.type == Dynamsoft.Core.EnumCapturedResultItemType.CRIT_BARCODE) {
+          if (item.formatString.indexOf("PDF417") == -1) {
+            continue;
+          }
           try {
             let parsedResultItem = await parser.parse(item.bytes);
             readingResults.push(parsedResultItem);
