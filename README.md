@@ -2,6 +2,12 @@
 
 A web demo scanning ID cards from flatbed scanners
 
+
+
+https://github.com/xulihang/Web-ID-Card-Flatbed-Scanner/assets/5462205/2967326d-1a45-4a33-b4c5-429f4c0451cc
+
+
+
 It uses the following SDKs by Dynamsoft:
 
 * Dynamic Web TWAIN: acquire images from document scanners.
@@ -11,3 +17,6 @@ It uses the following SDKs by Dynamsoft:
 * Dynamsoft Code Parser: parse MRZ and barcodes to get meaningful data
 
 [Online demo](https://tony-xlh.github.io/Web-ID-Card-Flatbed-Scanner/)
+
+[Sample-images.pdf](https://github.com/xulihang/Web-ID-Card-Flatbed-Scanner/files/14926050/ID-Card-Scanned-Done.pdf)
+
