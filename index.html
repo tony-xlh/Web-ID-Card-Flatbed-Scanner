@@ -444,7 +444,9 @@
       for (let index = 0; index < result.items.length; index++) {
         const item = result.items[index];
         if (item.type == Dynamsoft.Core.EnumCapturedResultItemType.CRIT_TEXT_LINE) {
-          str = str + item.text;
+          if (item.text.length == 30 || item.text.length == 44) {
+            str = str + item.text;
+          }
         }
       }
       if (str) {
